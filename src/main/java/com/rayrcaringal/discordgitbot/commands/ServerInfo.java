@@ -12,7 +12,7 @@ public class ServerInfo extends Command{
     public ServerInfo(){
         this.name = "serverinfo";
         this.aliases = new String[]{"server"};
-        this.help = "Infromation about server";
+        this.help = "Information about server";
     }
     
     @Override
