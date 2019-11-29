@@ -48,11 +48,12 @@ public class UserRepo extends Command {
             list = list + temp + ". " + repos.get(i) + "\n";
             eb.setDescription(list);
             if (i == newLimit-1) {
+                int counter = limit + i+1;
                 event.getChannel().sendMessage(eb.build()).complete().addReaction("U+27A1").queue();
                 waiter.waitForEvent(GuildMessageReactionAddEvent.class,
                         e -> e.getChannel().equals(event.getChannel())
                                 && e.getUser().equals(event.getAuthor())
-                        , e->event.reply("Test"),
+                        , e-> send( counter, event),
                         30, TimeUnit.SECONDS, () -> event.reply("Please input your selected path"));
                 return;
             }
@@ -79,9 +80,10 @@ public class UserRepo extends Command {
             } else {// Provide List of Repos based on user name
                 list = "";
                 String name = event.getArgs();
+                System.out.println("Name is " +name + " Count is "+github.searchUsers().q(name).list().getTotalCount() );
                 repos.clear();
                 if (github.searchUsers().q(name).list().getTotalCount() > 0) {
-                    GHUser user = Iterables.getOnlyElement(github.searchUsers().q(name).list());
+                    GHUser user = Iterables.get(github.searchUsers().q(name).list(), 0 );
                     for (GHRepository repo : user.listRepositories()) {
                         if (!(repo.isPrivate())) {
                             repos.add(repo.getFullName());
@@ -91,7 +93,9 @@ public class UserRepo extends Command {
                     eb.setColor(Color.GREEN);
                     eb.setTitle(user.getHtmlUrl().toString());
                     eb.setThumbnail(user.getAvatarUrl());
+                    System.out.println("Here");
                     for (int i = 0; i < repos.size(); i++) {
+                        System.out.println("i is " + i + " Repo is " +repos.size());
                         String temp = String.valueOf(i + 1);
                         list = list + temp + ". " + repos.get(i) + "\n";
                         eb.setDescription(list);
@@ -106,7 +110,6 @@ public class UserRepo extends Command {
                                     },
                             30, TimeUnit.SECONDS, () -> event.reply("Please input your selected path"));
                             break;
-
                         }
 
                     }
