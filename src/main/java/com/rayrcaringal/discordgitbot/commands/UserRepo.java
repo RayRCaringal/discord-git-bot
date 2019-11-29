@@ -37,15 +37,17 @@ public class UserRepo extends Command {
             this.limit = 10;
         }
     }
-/*
+
     void send(int i, CommandEvent event){
         int newLimit = i+limit-1;
+        list = "";
+        System.out.println("i is " + i + "Repo is " +repos.size());
         for(; i < repos.size(); i++){
+            System.out.println("here");
             String temp = String.valueOf(i + 1);
             list = list + temp + ". " + repos.get(i) + "\n";
             eb.setDescription(list);
             if (i == newLimit-1) {
-                list = "";
                 event.getChannel().sendMessage(eb.build()).complete().addReaction("U+27A1").queue();
                 waiter.waitForEvent(GuildMessageReactionAddEvent.class,
                         e -> e.getChannel().equals(event.getChannel())
@@ -58,7 +60,7 @@ public class UserRepo extends Command {
         event.getChannel().sendMessage(eb.build()).queue();
         return;
     }
-*/
+
     @Override
     protected void execute(CommandEvent event) {
         if ((event.getArgs().isEmpty()) || (event.getArgs().contains(" ") && !(event.getArgs().contains("/")))) {
@@ -87,28 +89,31 @@ public class UserRepo extends Command {
                     }
 
                     eb.setColor(Color.GREEN);
+                    eb.setTitle(user.getHtmlUrl().toString());
+                    eb.setThumbnail(user.getAvatarUrl());
                     for (int i = 0; i < repos.size(); i++) {
                         String temp = String.valueOf(i + 1);
                         list = list + temp + ". " + repos.get(i) + "\n";
-                   /*     if (i == limit-1) {
-                            list = "";
+                        eb.setDescription(list);
+                        if (i == limit-1){
                             event.getChannel().sendMessage(eb.build()).complete().addReaction("U+27A1").queue();
                             waiter.waitForEvent(GuildMessageReactionAddEvent.class,
                                     e -> e.getChannel().equals(event.getChannel())
                                             && e.getUser().equals(event.getAuthor())
                                     , e -> {
-                                  send(repos, i+1, event);
+                                  int counter = limit;
+                                  send( counter, event);
                                     },
                             30, TimeUnit.SECONDS, () -> event.reply("Please input your selected path"));
                             break;
 
-                        }*/
+                        }
 
                     }
-                    eb.setDescription(list);
-                    //if(limit - i - 1 > 0){
-                    event.reply(eb.build());
-                    //}
+                    if(repos.size() < limit){
+                        eb.setDescription(list);
+                        event.reply(eb.build());
+                    }
                 } else {
                     System.out.print("Here");
                     event.reply(event.getAuthor().getAsMention() + " no user by this name was found");
