@@ -5,7 +5,9 @@ import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import configs.Config;
+import connection.impl.RepoImpl;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.guild.react.GuildMessageReactionAddEvent;
 import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHUser;
@@ -14,23 +16,25 @@ import org.kohsuke.github.GitHub;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-
 public class UserRepo extends Command {
     private EventWaiter waiter;
+    private RepoImpl r;
     EmbedBuilder eb = new EmbedBuilder();
     ArrayList<String> repos = new ArrayList<>();
     private int limit;
     String list;
 
-    public UserRepo(EventWaiter waiter) throws IOException {
+    public UserRepo(EventWaiter waiter, RepoImpl r) throws IOException {
         Config config = new Config(new File("config.json"));
         this.name = "userRepo";
         this.help = "Select a User's Repository";
         this.arguments = "<user>/<repo>";
         this.waiter = waiter;
+        this.r = r;
         if (config.getInt("repo_limit") < 100) {
             this.limit = config.getInt("repo_limit");
         } else {
@@ -43,7 +47,6 @@ public class UserRepo extends Command {
         list = "";
         System.out.println("i is " + i + "Repo is " + repos.size());
         for (; i < repos.size(); i++) {
-           // System.out.println("here");
             String temp = "**" + String.valueOf(i + 1);
             list = list + temp + ".** " + repos.get(i) + "\n";
             eb.setDescription(list);
@@ -65,7 +68,7 @@ public class UserRepo extends Command {
     @Override
     protected void execute(CommandEvent event) {
         if ((event.getArgs().isEmpty()) || (event.getArgs().contains(" ") && !(event.getArgs().contains("/")))) {
-            event.reply(event.getAuthor().getAsMention() + " provide a path to a repository: $userRepo [Username]/[Repository Name]");
+            event.reply(event.getAuthor().getAsMention() + " provide a path to a repository: $userRepo [Username]/[Repository Name] [Keyword]");
         } else {
             GitHub github = null;
             try {
@@ -75,12 +78,33 @@ public class UserRepo extends Command {
             }
 
             if (event.getArgs().contains("/")) {
-                //WIP to be determined
-                System.out.println("It's going to getRepo");
-            } else {// Provide List of Repos based on user name
+                String[] args = event.getArgs().split(" ");
+                if(args.length > 2 ){
+                    event.reply("Too many arguments");
+                    event.reply(event.getAuthor().getAsMention() + " provide a path to a repository: $userRepo [Username]/[Repository Name] [Keyword]");
+                    return;
+                }
+                if(args.length < 2){
+                    event.reply("Please Input a Keyword");
+                    waiter.waitForEvent(GuildMessageReceivedEvent.class,
+                            e -> e.getAuthor().equals(event.getAuthor()) && e.getChannel().equals(event.getChannel()) && !e.getMessage().equals(event.getMessage()),
+                            e-> {
+                                try {
+                                    r.store(args[0], e.getMessage().getContentStripped());
+                                } catch (SQLException ex) {
+                                    ex.printStackTrace();
+                                }
+                            });
+                }else{
+                    try {
+                        r.store(args[0], args[1]);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }else {// Provide List of Repos based on user name
                 list = "";
                 String name = event.getArgs();
-                System.out.println("Name is " + name + " Count is " + github.searchUsers().q(name).list().getTotalCount());
                 repos.clear();
 
                 eb.setColor(Color.GREEN);
@@ -107,7 +131,6 @@ public class UserRepo extends Command {
                     eb.setThumbnail(user.getAvatarUrl());
                     System.out.println("Here");
                     for (int i = 0; i < repos.size(); i++) {
-                        System.out.println("i is " + i + " Repo is " + repos.size());
                         String temp = "**" + String.valueOf(i + 1);
                         list = list + temp + ".** " + repos.get(i) + "\n";
                         eb.setDescription(list);
@@ -130,7 +153,6 @@ public class UserRepo extends Command {
                         event.reply(eb.build());
                     }
                 } else {
-                    System.out.print("Here");
                     event.reply(event.getAuthor().getAsMention() + " no user by this name was found");
                 }
             }

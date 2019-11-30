@@ -3,6 +3,7 @@ import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import com.rayrcaringal.discordgitbot.commands.ServerInfo;
 import com.rayrcaringal.discordgitbot.commands.UserRepo;
 import configs.Config;
+import connection.impl.RepoImpl;
 import net.dv8tion.jda.api.AccountType;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -12,11 +13,13 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 
 
 public class Bot extends ListenerAdapter {
 
-    public static void main(String[] args) throws LoginException, IOException {
+    public static void main(String[] args) throws LoginException, IOException, SQLException {
+        RepoImpl r = new RepoImpl();
         Config config = new Config(new File("config.json"));
         EventWaiter waiter = new EventWaiter();
         CommandClientBuilder client = new CommandClientBuilder();
@@ -24,7 +27,7 @@ public class Bot extends ListenerAdapter {
         client.setPrefix("$");
         client.setHelpWord("helpme");
         client.addCommands(new ServerInfo(),
-                new UserRepo(waiter)
+                new UserRepo(waiter, r)
                                             );
 
         JDA jda = new JDABuilder(AccountType.BOT)
