@@ -10,6 +10,10 @@ public class Repo {
         this.name = name;
     }
 
+    public Repo() {
+
+    }
+
     public int getId() {
         return id;
     }

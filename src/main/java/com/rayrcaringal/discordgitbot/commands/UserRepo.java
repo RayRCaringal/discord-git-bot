@@ -5,6 +5,7 @@ import com.jagrosh.jdautilities.command.Command;
 import com.jagrosh.jdautilities.command.CommandEvent;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import configs.Config;
+import connection.Repo;
 import connection.impl.RepoImpl;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.message.guild.GuildMessageReceivedEvent;
@@ -32,7 +33,7 @@ public class UserRepo extends Command {
         Config config = new Config(new File("config.json"));
         this.name = "userRepo";
         this.help = "Select a User's Repository";
-        this.arguments = "<user>/<repo>";
+        this.arguments = "<user>/<repo> <keyword>";
         this.waiter = waiter;
         this.r = r;
         if (config.getInt("repo_limit") < 100) {
@@ -79,30 +80,59 @@ public class UserRepo extends Command {
 
             if (event.getArgs().contains("/")) {
                 String[] args = event.getArgs().split(" ");
-                if(args.length > 2 ){
+                if (args.length > 2) {
                     event.reply("Too many arguments");
                     event.reply(event.getAuthor().getAsMention() + " provide a path to a repository: $userRepo [Username]/[Repository Name] [Keyword]");
                     return;
                 }
-                if(args.length < 2){
+                Repo repo = null;
+                try {
+                    repo = r.search("path", args[0]);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                if (repo.getPath().equals(args[0])) {
+                    event.reply(event.getAuthor().getAsMention() + "Path is already assigned to the keyword: " + repo.getName());
+                    event.reply("If you would like to re-assign this path, please delete the current keyword.");
+                    return;
+                }
+                if (args.length < 2) {
                     event.reply("Please Input a Keyword");
                     waiter.waitForEvent(GuildMessageReceivedEvent.class,
                             e -> e.getAuthor().equals(event.getAuthor()) && e.getChannel().equals(event.getChannel()) && !e.getMessage().equals(event.getMessage()),
-                            e-> {
+                            e -> {
                                 try {
-                                    r.store(args[0], e.getMessage().getContentStripped());
+                                    Repo temp = r.search("name", e.getMessage().getContentStripped());
+                                    if (temp.getName().equals(e.getMessage().getContentStripped())) {
+                                        event.reply(event.getAuthor().getAsMention() + "Keyword is already assigned to the path: " + temp.getPath());
+                                        event.reply("If you would like to re-assign this keyword, please delete the current path.");
+                                    } else {
+                                        r.store(args[0], e.getMessage().getContentStripped());
+                                        event.reply(event.getAuthor().getAsMention() + " Repository is now stored in: " + args[1]);
+                                        event.reply("Please use $repo [keyword] to access your repository");
+                                    }
                                 } catch (SQLException ex) {
                                     ex.printStackTrace();
                                 }
                             });
-                }else{
+                }
+                else {
                     try {
-                        r.store(args[0], args[1]);
+                        if (repo.getName().equals(args[1])) {
+                            event.reply(event.getAuthor().getAsMention() + "Keyword is already assigned to the path: " + repo.getPath());
+                            event.reply("If you would like to re-assign this keyword, please delete the current path.");
+                            return;
+                        } else {
+                            r.store(args[0], args[1]);
+                            event.reply(event.getAuthor().getAsMention() + " Repository is now stored in: " + args[1]);
+                            event.reply("Please use $repo [keyword] to access your repository");
+                        }
                     } catch (SQLException e) {
                         e.printStackTrace();
                     }
                 }
-            }else {// Provide List of Repos based on user name
+            }
+            else{// Provide List of Repos based on user name
                 list = "";
                 String name = event.getArgs();
                 repos.clear();

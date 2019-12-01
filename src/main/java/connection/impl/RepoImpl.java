@@ -5,10 +5,9 @@ import connection.Repo;
 import connection.dao.RepoDao;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RepoImpl implements RepoDao {
     @Override
@@ -38,7 +37,6 @@ public class RepoImpl implements RepoDao {
 
     @Override
     public void store(String path, String name) throws SQLException {
-        createRepoTable();
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
@@ -68,8 +66,78 @@ public class RepoImpl implements RepoDao {
     }
 
     @Override
-    public Repo search(String field, String value) {
-        return null;
+    public Repo search(String field, String value) throws SQLException {
+        Repo repo = new Repo();
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        try{
+            connection = ConnectionConfiguration.getConnection();
+            preparedStatement = connection.prepareStatement("SELECT * FROM repo WHERE " + field + "= ?");
+            preparedStatement.setString(1, value);
+            resultSet = preparedStatement.executeQuery();
+            if(resultSet.next() == false){
+                System.out.println("In the if statement");
+                repo.setPath("empty");
+                repo.setName("empty");
+            }else{
+                repo.setId(resultSet.getInt("id"));
+                repo.setPath(resultSet.getString("path"));
+                repo.setName(resultSet.getString("name"));
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            if(resultSet != null){
+                resultSet.close();;
+            }
+            if(preparedStatement != null){
+                preparedStatement.close();
+            }
+            if(connection != null){
+                connection.close();
+            }
+
+        }
+        return  repo;
+    }
+
+    @Override
+    public List<Repo> getAll() throws SQLException {
+        List<Repo> result = null;
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        ResultSet resultSet = null;
+        try{
+            result = new ArrayList<>();
+            connection = ConnectionConfiguration.getConnection();
+            preparedStatement = connection.prepareStatement("SELECT * FROM repo");
+            resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()){
+                Repo repo = new Repo();
+                repo.setId(resultSet.getInt("id"));
+                repo.setPath(resultSet.getString("path"));
+                repo.setName(resultSet.getString("name"));
+                result.add(repo);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            if(resultSet != null){
+                resultSet.close();;
+            }
+            if(preparedStatement != null){
+                preparedStatement.close();
+            }
+            if(connection != null){
+                connection.close();
+            }
+        }
+
+
+
+        return  result;
     }
 
     @Override
