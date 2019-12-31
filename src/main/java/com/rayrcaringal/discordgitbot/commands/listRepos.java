@@ -33,9 +33,9 @@ public class listRepos extends Command {
                 eb.setFooter("Path : Keyword");
                 String temp = "";
                 for(int i = 0 ; i < list.size(); i++){
-                    temp = "**" + i + ". **" +temp  + list.get(i).getPath() + " : " + list.get(i).getName() + "\n";
-                    eb.setDescription(temp);
+                    temp = temp + "**" + (i+1) + ". **"  + list.get(i).getPath() + " : " + list.get(i).getName() + "\n";
                 }
+                eb.setDescription(temp);
                 event.reply(eb.build());
             }
 
