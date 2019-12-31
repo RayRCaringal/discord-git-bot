@@ -77,7 +77,6 @@ public class RepoImpl implements RepoDao {
             preparedStatement.setString(1, value);
             resultSet = preparedStatement.executeQuery();
             if(resultSet.next() == false){
-                System.out.println("In the if statement");
                 repo.setPath("empty");
                 repo.setName("empty");
             }else{

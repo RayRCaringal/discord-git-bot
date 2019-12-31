@@ -92,7 +92,7 @@ public class UserRepo extends Command {
                     e.printStackTrace();
                 }
                 if (repo.getPath().equals(args[0])) {
-                    event.reply(event.getAuthor().getAsMention() + "Path is already assigned to the keyword: " + repo.getName());
+                    event.reply(event.getAuthor().getAsMention() + " Path is already assigned to the keyword: " + repo.getName());
                     event.reply("If you would like to re-assign this path, please delete the current keyword.");
                     return;
                 }
@@ -104,7 +104,7 @@ public class UserRepo extends Command {
                                 try {
                                     Repo temp = r.search("name", e.getMessage().getContentStripped());
                                     if (temp.getName().equals(e.getMessage().getContentStripped())) {
-                                        event.reply(event.getAuthor().getAsMention() + "Keyword is already assigned to the path: " + temp.getPath());
+                                        event.reply(event.getAuthor().getAsMention() + " Keyword is already assigned to the path: " + temp.getPath());
                                         event.reply("If you would like to re-assign this keyword, please delete the current path.");
                                     } else {
                                         r.store(args[0], e.getMessage().getContentStripped());
@@ -118,8 +118,9 @@ public class UserRepo extends Command {
                 }
                 else {
                     try {
-                        if (repo.getName().equals(args[1])) {
-                            event.reply(event.getAuthor().getAsMention() + "Keyword is already assigned to the path: " + repo.getPath());
+                        Repo temp = r.search("name", args[1]);
+                        if (temp.getName().equals(args[1])) {
+                            event.reply(event.getAuthor().getAsMention() + " Keyword is already assigned to the path: " + temp.getPath());
                             event.reply("If you would like to re-assign this keyword, please delete the current path.");
                             return;
                         } else {

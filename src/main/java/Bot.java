@@ -1,10 +1,8 @@
 import com.jagrosh.jdautilities.command.CommandClientBuilder;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
-import com.rayrcaringal.discordgitbot.commands.ServerInfo;
 import com.rayrcaringal.discordgitbot.commands.UserRepo;
 import com.rayrcaringal.discordgitbot.commands.listRepos;
 import configs.Config;
-import connection.Repo;
 import connection.impl.RepoImpl;
 import net.dv8tion.jda.api.AccountType;
 import net.dv8tion.jda.api.JDA;
@@ -16,7 +14,6 @@ import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
 
 
 public class Bot extends ListenerAdapter {
@@ -29,8 +26,7 @@ public class Bot extends ListenerAdapter {
         client.setOwnerId(config.getString("owner"));
         client.setPrefix("$");
         client.setHelpWord("helpme");
-        client.addCommands(new ServerInfo(),
-                new UserRepo(waiter, r),
+        client.addCommands(new UserRepo(waiter, r),
                 new listRepos(r)
                                             );
             r.createRepoTable();
