@@ -140,8 +140,24 @@ public class RepoImpl implements RepoDao {
     }
 
     @Override
-    public Repo delete(String field, String value) {
-        return null;
+    public void delete(String key) throws SQLException {
+        Connection connection = null;
+        PreparedStatement preparedStatement = null;
+        try{
+            connection = ConnectionConfiguration.getConnection();
+            preparedStatement = connection.prepareStatement("DELETE FROM repo WHERE name = ?");
+            preparedStatement.setString(1, key);
+            preparedStatement.executeUpdate();
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            if(preparedStatement != null){
+                preparedStatement.close();
+            }
+            if(connection != null){
+                connection.close();
+            }
+        }
     }
 
     @Override

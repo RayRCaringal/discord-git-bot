@@ -14,7 +14,7 @@ public interface RepoDao{
 
     List<Repo> getAll() throws SQLException;
 
-    Repo delete(String field, String value);
+    void delete(String key) throws SQLException;
 
     void update(Repo repo, String field, String value);
 
