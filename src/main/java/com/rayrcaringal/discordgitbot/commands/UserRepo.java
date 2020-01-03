@@ -46,7 +46,7 @@ public class UserRepo extends Command {
     void send(int i, CommandEvent event) {
         int newLimit = i + limit - 1;
         list = "";
-        System.out.println("i is " + i + "Repo is " + repos.size());
+        //System.out.println("i is " + i + "Repo is " + repos.size());
         for (; i < repos.size(); i++) {
             String temp = "**" + String.valueOf(i + 1);
             list = list + temp + ".** " + repos.get(i) + "\n";
@@ -160,7 +160,6 @@ public class UserRepo extends Command {
                     }
                     eb.setTitle(user.getHtmlUrl().toString());
                     eb.setThumbnail(user.getAvatarUrl());
-                    System.out.println("Here");
                     for (int i = 0; i < repos.size(); i++) {
                         String temp = "**" + String.valueOf(i + 1);
                         list = list + temp + ".** " + repos.get(i) + "\n";
