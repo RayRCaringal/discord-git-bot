@@ -2,6 +2,7 @@ import com.jagrosh.jdautilities.command.CommandClientBuilder;
 import com.jagrosh.jdautilities.commons.waiter.EventWaiter;
 import com.rayrcaringal.discordgitbot.commands.DelRepo;
 import com.rayrcaringal.discordgitbot.commands.UserRepo;
+import com.rayrcaringal.discordgitbot.commands.command.getRepo;
 import com.rayrcaringal.discordgitbot.commands.listRepos;
 import configs.Config;
 import connection.impl.RepoImpl;
@@ -27,7 +28,8 @@ public class Bot extends ListenerAdapter {
         client.setOwnerId(config.getString("owner"));
         client.setPrefix("$");
         client.setHelpWord("helpme");
-        client.addCommands(new DelRepo(r),
+        client.addCommands(new getRepo(waiter, r),
+                new DelRepo(r),
                 new UserRepo(waiter, r),
                 new listRepos(r)
                                             );
