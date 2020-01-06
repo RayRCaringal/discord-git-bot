@@ -41,11 +41,18 @@ public class getRepo extends Command {
         }
     }
 
-    fullRepo list(GHTree trees, int start) throws IOException {
+    /**
+     * Generates the description for the Embed builder based on the display_limit in config file
+     * @param trees current folder in Repo to be accessed
+     * @param start variable for iterating through the tree if # of files > display_limit
+     * @param currFolder folder marked to be accessed
+     * @return fullRepo class storing start value, # of folders, and text to be displayed
+     * @throws IOException
+     */
+    fullRepo list(GHTree trees, int start, int currFolder) throws IOException {
         int numFold = 0;
         int counter = 0;
         String result = "";
-        boolean folder = false;
         List<GHTreeEntry> list = trees.getTree();
         for(int i = start; i < list.size(); i++){
             if(counter > limit){
@@ -53,11 +60,12 @@ public class getRepo extends Command {
                 return repo;
             }
             if(list.get(i).getType().equals("tree")){
-                if(folder == true){
-                    result = result + "->" + list.get(i).getPath() + "\n";
-                }else{
-                    folder = true;
+               // System.out.println("Num fold : "+numFold+ " CurrFold :" +currFolder);
+                if(currFolder == numFold){
                     result = result + "-**>**" + list.get(i).getPath() + "\n";
+                }else{
+                    result = result + "->" + list.get(i).getPath() + "\n";
+
                 }
                 numFold++;
             }else{
@@ -69,63 +77,92 @@ public class getRepo extends Command {
         return repo;
     }
 
-    void send(int start, GHTree trees, CommandEvent event) throws IOException {
-        fullRepo repo = list(trees,start);
-        eb.setDescription(repo.getText());
-        if(repo.getStart() > 0 && start != 0){
-            event.getChannel().sendMessage(eb.build()).queue(message -> {
-                message.addReaction("U+2B05").queue();
-                message.addReaction("U+27A1").queue();
-                message.delete().queueAfter(5, TimeUnit.SECONDS);
-            });
-            waiter.waitForEvent(GuildMessageReactionAddEvent.class,
-                    e -> e.getChannel().equals(event.getChannel())
-                            && e.getUser().equals(event.getAuthor())
-                    , e -> {
-                        try {
-                            if(e.getReactionEmote().getEmoji().equals("➡")){
-                                send(repo.getStart(),trees, event);
-                            }else if(e.getReactionEmote().getEmoji().equals("⬅")){
-                                send(0,trees,event);
-                            }
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
-                        }
-                    },
-                    30, TimeUnit.SECONDS, () -> event.reply("Browser closing..."));
-        }else if(start == 0){
-            event.getChannel().sendMessage(eb.build()).queue(message -> {
-                message.addReaction("U+27A1").queue();
-                message.delete().queueAfter(5,TimeUnit.SECONDS);
-            });
-            waiter.waitForEvent(GuildMessageReactionAddEvent.class,
-                    e -> e.getChannel().equals(event.getChannel())
-                            && e.getUser().equals(event.getAuthor())
-                    , e -> {
-                        try {
-                            send(repo.getStart(), trees, event);
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
-                        }
-                    },
-                    30, TimeUnit.SECONDS, () -> event.reply("Closing browser..."));
-        }else{
-            event.getChannel().sendMessage(eb.build()).queue(message -> {
-                message.addReaction("U+2B05").queue();
-                message.delete().queueAfter(5, TimeUnit.SECONDS);
-            });
-            waiter.waitForEvent(GuildMessageReactionAddEvent.class,
-                    e -> e.getChannel().equals(event.getChannel())
-                            && e.getUser().equals(event.getAuthor())
-                    , e -> {
-                        try {
-                            send((start-limit-1),trees,event);
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
-                        }
-                    },
-                    30, TimeUnit.SECONDS, () -> event.reply("Browser closing..."));
+    /**
+     * Dives into a folder, returning its contents
+     * @param trees Current Folder
+     * @param currFolder Folder number we want to access
+     * @return the specified folder as a tree
+     * @throws IOException
+     */
+    GHTree getTree(GHTree trees, int currFolder) throws IOException {
+        List<GHTreeEntry> list = trees.getTree();
+        int counter = 0;
+        for(GHTreeEntry tree : list){
+            if(counter == currFolder){
+                return tree.asTree();
+            }else if(tree.getType().equals("tree")){
+                counter++;
+            }
         }
+        return null;
+    }
+
+    /**
+     * Recursively displays a repository
+     * @param start variable for iterating through the tree if # of files > display_limit
+     * @param trees current folder in Repo to be accessed
+     * @param event JDA event
+     * @param currFolder folder marked to be accessed
+     * @throws IOException
+     */
+    void display(int start, GHTree trees, CommandEvent event, int currFolder) throws IOException{
+        fullRepo repo = list(trees, start, currFolder);
+        eb.setDescription(repo.getText());
+
+        event.getChannel().sendMessage(eb.build()).queue(message -> {
+
+          if(repo.getStart() > 0){
+              if(start == 0){ // First Page
+                  message.addReaction("U+27A1").queue();
+              }else{ //@Xth Page, X > 0 && X < n where N = Total/Display_Limit
+                  message.addReaction("U+2B05").queue();
+                  message.addReaction("U+27A1").queue();
+              }
+          }else{
+              if(start > 0){
+                  message.addReaction("U+2B05").queue();
+              }
+              }
+
+           if(repo.getFoldNum() > 0){ // There are folders
+               if(repo.getFoldNum() != 1){ //More than one Folder
+                   if(currFolder == 0){ // First Folder
+                       message.addReaction("U+2B07").queue();
+                   }else if(currFolder != repo.getFoldNum()){// Nth Folder
+                       message.addReaction("U+2B07").queue();
+                       message.addReaction("U+2B06").queue();
+                   }else{ //Last Folder
+                       message.addReaction("U+2B06").queue();
+                   }
+               }
+               message.addReaction("U+2935").queue();
+           }
+            message.delete().queueAfter(10,TimeUnit.SECONDS);
+        });
+
+        waiter.waitForEvent(GuildMessageReactionAddEvent.class,
+                e -> e.getChannel().equals(event.getChannel())
+                        && e.getUser().equals(event.getAuthor())
+                , e -> {
+                    try {
+                        if(e.getReactionEmote().getEmoji().equals("➡")){
+                            display(repo.getStart(),trees, event,currFolder);
+                        }else if(e.getReactionEmote().getEmoji().equals("⬅")){
+                            display((repo.getStart()-limit-1),trees,event,currFolder);
+                        }else if(e.getReactionEmote().getEmoji().equals("⤵")){
+                            display(0, getTree(trees,currFolder), event,0);
+                        }else if(e.getReactionEmote().getEmoji().equals("⬇")){
+                            display(repo.getStart(), trees, event, currFolder+1);
+                        }else if(e.getReactionEmote().getEmoji().equals("⬆")){
+                            display(repo.getStart(), trees, event,currFolder-1);
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                },
+                30, TimeUnit.SECONDS, () -> System.out.println("Closing Browser..."));
+
+
     }
 
     //Use Type to determine whether it's a folder or a file
@@ -141,40 +178,11 @@ public class getRepo extends Command {
             GHRepository repo = gitHub.getRepository(temp.getPath());
             GHRef[] references = repo.getRefs();
             GHTree tree = repo.getTree(references[0].getObject().getSha());
-            fullRepo list = list(tree, 0);
+            fullRepo list = list(tree, 0, 0);
             eb.setColor(Color.GREEN);
             eb.setTitle("Homepage");
             eb.setFooter(temp.getPath());
-            if(list.getStart() > 0){ //Greater than the displayable limit
-                if(list.getFoldNum() == 0){ //More than one page to display
-                    eb.setDescription(list.getText());
-                    event.getChannel().sendMessage(eb.build()).queue(message -> {
-                        message.addReaction("U+27A1").queue();
-                        message.delete().queueAfter(5,TimeUnit.SECONDS);
-                    });
-                    waiter.waitForEvent(GuildMessageReactionAddEvent.class,
-                            e -> e.getChannel().equals(event.getChannel())
-                                    && e.getUser().equals(event.getAuthor())
-                            , e -> {
-                                try {
-                                    send(list.getStart(), tree, event);
-                                } catch (IOException ex) {
-                                    ex.printStackTrace();
-                                }
-                            },
-                            30, TimeUnit.SECONDS, () -> event.reply("Closing browser..."));
-                }else{ //Create Pages
-                    eb.setDescription(list.getText());
-                }
-            }else{
-                if(list.getFoldNum() == 0){ //No folders detected, do not wait just display
-                    eb.setDescription(list.getText());
-                }else{ //Include navigation reactions
-                    eb.setDescription(list.getText());
-                }
-            }
-            //event.reply(eb.build());
-            System.out.println(list.getText());
+            display(0, tree, event, 0);
         } catch (SQLException | IOException e) {
             e.printStackTrace();
         }
