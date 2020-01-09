@@ -110,7 +110,6 @@ public class getRepo extends Command {
         eb.setDescription(repo.getText());
 
         event.getChannel().sendMessage(eb.build()).queue(message -> {
-
           if(repo.getStart() > 0){
               if(start == 0){ // First Page
                   message.addReaction("U+27A1").queue();
@@ -128,7 +127,7 @@ public class getRepo extends Command {
                if(repo.getFoldNum() != 1){ //More than one Folder
                    if(currFolder == 0){ // First Folder
                        message.addReaction("U+2B07").queue();
-                   }else if(currFolder != repo.getFoldNum()){// Nth Folder
+                   }else if(currFolder != repo.getFoldNum()){// Xth Folder
                        message.addReaction("U+2B07").queue();
                        message.addReaction("U+2B06").queue();
                    }else{ //Last Folder
@@ -161,8 +160,6 @@ public class getRepo extends Command {
                     }
                 },
                 30, TimeUnit.SECONDS, () -> System.out.println("Closing Browser..."));
-
-
     }
 
     //Use Type to determine whether it's a folder or a file

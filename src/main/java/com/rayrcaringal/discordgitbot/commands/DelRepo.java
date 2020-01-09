@@ -13,7 +13,6 @@ import java.sql.SQLException;
 public class DelRepo extends Command {
     private RepoImpl r;
     public DelRepo(RepoImpl r) throws IOException {
-        Config config = new Config(new File("config.json"));
         this.name = "delRepo";
         this.help = "Delete a Repository";
         this.arguments = "<keyword>";
