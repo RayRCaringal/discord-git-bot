@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 public class findFile extends Command {
     RepoImpl r;
-    EmbedBuilder eb;
     EventWaiter waiter;
     boolean kill;
     int limit; //# of Characters to be displayed
@@ -30,7 +29,6 @@ public class findFile extends Command {
         this.help = "Checks if a file is present, presents path, link to file, and a button to dive into file";
         this.arguments = "<keyword> <file>)";
         this.r = r;
-        this.eb = new EmbedBuilder();
         this.waiter = waiter;
         this.txt = new ArrayList<>();
         if(config.getInt("line_limit") > 2000){ //Char limit is 2048
@@ -52,7 +50,6 @@ public class findFile extends Command {
               break;
           }
         }
-      //  eb.setDescription(line);
         int finalCounter = counter;
         event.getChannel().sendMessage("```" + line + "```").queue(message -> {
             if(finalCounter > limit && start > 0){
@@ -103,8 +100,6 @@ public class findFile extends Command {
                     txt.add(line);
                     line = reader.readLine();
                 }
-                //eb.setColor(Color.GREEN);
-                //eb.setTitle(list.get(i).getPath());
                 display(event,0);
                 return;
             }
@@ -117,9 +112,13 @@ public class findFile extends Command {
 
     @Override
     protected void execute(CommandEvent event) {
+        //Check for Arguments
         if(event.getArgs().isEmpty() || !(event.getArgs().contains(" "))){
             event.reply(event.getAuthor().getAsMention() + " To search for a file use: $find [keyword] [file]");
+            return;
         }
+
+        //Check for Valid Command
         String[] args = event.getArgs().split(" ");
         if(args.length > 2){
             event.reply("Too many arguments");
@@ -128,13 +127,15 @@ public class findFile extends Command {
         }
         kill = false;
         try {
+
+            //Verify whether or not keyword is present
             Repo temp = r.search("name", args[0]);
             if(temp.getName().equals(args[0])){
+                //Connect to GitHub
                 GitHub gitHub = GitHub.connectAnonymously();
                 GHRepository repo = gitHub.getRepository(temp.getPath());
                 GHRef[] references = repo.getRefs();
                 GHTree tree = repo.getTree(references[0].getObject().getSha());
-                eb.setColor(Color.GREEN);
                 search(repo, tree, args[1], event, "");
                 if(kill == false){
                     event.reply("File was not found in repo " + repo.getName() + ".Please remember that file names are case sensitive");

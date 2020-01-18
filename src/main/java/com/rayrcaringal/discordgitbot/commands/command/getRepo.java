@@ -23,7 +23,6 @@ public class getRepo extends Command {
     private EventWaiter waiter;
     private RepoImpl r;
     private int limit;
-    private int depth;
     EmbedBuilder eb = new EmbedBuilder();
 
     public getRepo(EventWaiter waiter, RepoImpl r) throws IOException {
@@ -33,7 +32,6 @@ public class getRepo extends Command {
         this.arguments = "<keyword>";
         this.waiter = waiter;
         this.r = r;
-        this.depth = 0;
         if (config.getInt("display_limit") < 100) {
             this.limit = config.getInt("display_limit");
         } else {
@@ -55,12 +53,14 @@ public class getRepo extends Command {
         String result = "";
         List<GHTreeEntry> list = trees.getTree();
         for(int i = start; i < list.size(); i++){
+            //If Counter is at limit then return what is current availabe
             if(counter > limit){
                 fullRepo repo = new fullRepo(numFold,result, i);
                 return repo;
             }
+
+            //Mark Folders
             if(list.get(i).getType().equals("tree")){
-               // System.out.println("Num fold : "+numFold+ " CurrFold :" +currFolder);
                 if(currFolder == numFold){
                     result = result + "-**>**" + list.get(i).getPath() + "\n";
                 }else{
@@ -68,7 +68,10 @@ public class getRepo extends Command {
 
                 }
                 numFold++;
-            }else{
+            }
+
+            //Mark Files
+            else{
                 result = result + "-" + list.get(i).getPath() + "\n";
             }
             counter++;
@@ -109,7 +112,9 @@ public class getRepo extends Command {
         fullRepo repo = list(trees, start, currFolder);
         eb.setDescription(repo.getText());
 
+        //Add Icons for navigating repo on Embed
         event.getChannel().sendMessage(eb.build()).queue(message -> {
+          //Left and Right Buttons
           if(repo.getStart() > 0){
               if(start == 0){ // First Page
                   message.addReaction("U+27A1").queue();
@@ -118,11 +123,12 @@ public class getRepo extends Command {
                   message.addReaction("U+27A1").queue();
               }
           }else{
-              if(start > 0){
+              if(start > 0){ //Last Page
                   message.addReaction("U+2B05").queue();
               }
               }
 
+           //Up, Down, and In Buttons
            if(repo.getFoldNum() > 0){ // There are folders
                if(repo.getFoldNum() != 1){ //More than one Folder
                    if(currFolder == 0){ // First Folder
@@ -139,7 +145,9 @@ public class getRepo extends Command {
             message.delete().queueAfter(10,TimeUnit.SECONDS);
         });
 
-        waiter.waitForEvent(GuildMessageReactionAddEvent.class,
+        //Event Waiter for Buttons
+        waiter.waitForEvent(
+                GuildMessageReactionAddEvent.class,
                 e -> e.getChannel().equals(event.getChannel())
                         && e.getUser().equals(event.getAuthor())
                 , e -> {
@@ -167,19 +175,31 @@ public class getRepo extends Command {
     protected void execute(CommandEvent event) {
         if(event.getArgs().isEmpty() || event.getArgs().contains(" ")){
             event.reply(event.getAuthor().getAsMention() + " To delete a repo use: $delRepo [keyword]");
+            return;
         }
-        GitHub gitHub = null;
+
         try {
-            gitHub = GitHub.connectAnonymously();
+            //Connect to GitHub
+            GitHub gitHub = GitHub.connectAnonymously();
+
+            //Verify if valid keyword
             Repo temp = r.search("name", event.getArgs());
-            GHRepository repo = gitHub.getRepository(temp.getPath());
-            GHRef[] references = repo.getRefs();
-            GHTree tree = repo.getTree(references[0].getObject().getSha());
-            fullRepo list = list(tree, 0, 0);
-            eb.setColor(Color.GREEN);
-            eb.setTitle("Homepage");
-            eb.setFooter(temp.getPath());
-            display(0, tree, event, 0);
+            if(temp.getName().equals(event.getArgs())){
+                GHRepository repo = gitHub.getRepository(temp.getPath());
+
+                //List of References, References contain: type, SHA, and URL
+                GHRef[] references = repo.getRefs();
+
+                //Get Git Tree by Sha
+                GHTree tree = repo.getTree(references[0].getObject().getSha());
+                eb.setColor(Color.GREEN);
+
+                //Display Repository
+                display(0, tree, event, 0);
+            }else{
+                event.reply(event.getAuthor().getAsMention() + "Keyword invalid, use $listRepos for a list of all keywords and paths currently stored");
+            }
+
         } catch (SQLException | IOException e) {
             e.printStackTrace();
         }

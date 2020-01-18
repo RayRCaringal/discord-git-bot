@@ -32,6 +32,8 @@ public class listRepos extends Command {
                 eb.setTitle("Repositories");
                 eb.setFooter("Path : Keyword");
                 String temp = "";
+
+                //Converts List to String
                 for(int i = 0 ; i < list.size(); i++){
                     temp = temp + "**" + (i+1) + ". **"  + list.get(i).getPath() + " : " + list.get(i).getName() + "\n";
                 }
