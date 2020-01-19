@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 
 
@@ -24,6 +25,7 @@ public class getRepo extends Command {
     private RepoImpl r;
     private int limit;
     EmbedBuilder eb = new EmbedBuilder();
+    Stack<String> depth = new Stack<>();
 
     public getRepo(EventWaiter waiter, RepoImpl r) throws IOException {
         Config config = new Config(new File("config.json"));
@@ -108,7 +110,7 @@ public class getRepo extends Command {
      * @param currFolder folder marked to be accessed
      * @throws IOException
      */
-    void display(int start, GHTree trees, CommandEvent event, int currFolder) throws IOException{
+    void display(int start, GHTree trees, CommandEvent event, int currFolder, GHRepository repos) throws IOException{
         fullRepo repo = list(trees, start, currFolder);
         eb.setDescription(repo.getText());
 
@@ -133,7 +135,7 @@ public class getRepo extends Command {
                if(repo.getFoldNum() != 1){ //More than one Folder
                    if(currFolder == 0){ // First Folder
                        message.addReaction("U+2B07").queue();
-                   }else if(currFolder != repo.getFoldNum()){// Xth Folder
+                   }else if(currFolder != repo.getFoldNum()-1){// Xth Folder
                        message.addReaction("U+2B07").queue();
                        message.addReaction("U+2B06").queue();
                    }else{ //Last Folder
@@ -142,8 +144,12 @@ public class getRepo extends Command {
                }
                message.addReaction("U+2935").queue();
            }
+            if(depth.size() > 0){//In subtree
+                message.addReaction("U+2934").queue();
+            }
             message.delete().queueAfter(10,TimeUnit.SECONDS);
         });
+
 
         //Event Waiter for Buttons
         waiter.waitForEvent(
@@ -153,15 +159,18 @@ public class getRepo extends Command {
                 , e -> {
                     try {
                         if(e.getReactionEmote().getEmoji().equals("➡")){
-                            display(repo.getStart(),trees, event,currFolder);
+                            display(repo.getStart(),trees, event,currFolder, repos);
                         }else if(e.getReactionEmote().getEmoji().equals("⬅")){
-                            display((repo.getStart()-limit-1),trees,event,currFolder);
+                            display((repo.getStart()-limit-1),trees,event,currFolder, repos);
                         }else if(e.getReactionEmote().getEmoji().equals("⤵")){
-                            display(0, getTree(trees,currFolder), event,0);
+                            depth.push(trees.getSha());
+                            display(0, getTree(trees,currFolder), event,0, repos);
                         }else if(e.getReactionEmote().getEmoji().equals("⬇")){
-                            display(repo.getStart(), trees, event, currFolder+1);
+                            display(repo.getStart(), trees, event, currFolder+1, repos);
                         }else if(e.getReactionEmote().getEmoji().equals("⬆")){
-                            display(repo.getStart(), trees, event,currFolder-1);
+                            display(repo.getStart(), trees, event,currFolder-1, repos);
+                        }else if (e.getReactionEmote().getEmoji().equals("⤴")){
+                            display(0, repos.getTree(depth.pop()), event,0, repos);
                         }
                     } catch (IOException ex) {
                         ex.printStackTrace();
@@ -192,10 +201,11 @@ public class getRepo extends Command {
 
                 //Get Git Tree by Sha
                 GHTree tree = repo.getTree(references[0].getObject().getSha());
+                //depth.push(references[0].getObject().getSha());
                 eb.setColor(Color.GREEN);
 
                 //Display Repository
-                display(0, tree, event, 0);
+                display(0, tree, event, 0, repo);
             }else{
                 event.reply(event.getAuthor().getAsMention() + "Keyword invalid, use $listRepos for a list of all keywords and paths currently stored");
             }
